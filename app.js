@@ -39,6 +39,19 @@ const HERO_CARDS = [
   "Balloon", "Barbarian Barrel", "Goblins", "Mega Minion", "Wizard", "Magic Archer", "Dark Prince"
 ];
 
+// Cartas que son Edificios
+const BUILDINGS = [
+  "Cannon", "Mortar", "Tesla", "Barbarian Hut", "Bomb Tower", "Elixir Collector", 
+  "Goblin Cage", "Goblin Hut", "Inferno Tower", "Tombstone", "Goblin Drill", "X-Bow", "Furnace"
+];
+
+// Cartas que son Hechizos
+const ALL_SPELLS = [
+  "Arrows", "Barbarian Barrel", "Giant Snowball", "Zap", "Earthquake", "Fireball", 
+  "Rocket", "Clone", "Freeze", "Goblin Barrel", "Goblin Curse", "Lightning", "Mirror", 
+  "Poison", "Rage", "Tornado", "Void", "The Log", "Graveyard", "Royal Delivery"
+];
+
 // ----------------------------------------------------
 // ESTADO GLOBAL DE LA APLICACIÓN
 // ----------------------------------------------------
@@ -52,7 +65,10 @@ let appState = {
   filters: {
     rarity: "all",           // Filtro de rareza
     onlyEvo: false,          // Filtro de sólo evolucionadas
-    search: ""               // Búsqueda por texto
+    search: "",              // Búsqueda por texto
+    type: "all",             // Filtro por tipo: all, troop, spell, building
+    elixir: "all",           // Filtro por elixir: all, 1, 2, 3...
+    status: "all"            // Filtro por estado: all, max, ready, cards_missing
   },
   collectionSortBy: "name-asc",   // Criterio de orden en Colección
   bottomSheetSortBy: "name-asc",  // Criterio de orden en Bottom Sheet
@@ -272,6 +288,11 @@ function loadFromLocalStorage() {
     document.getElementById('player-clan').innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
     document.getElementById('player-crown-level').innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
     document.getElementById('player-challenge-wins').innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
+    
+    if (appState.playerData.lastSync) {
+      const syncDate = new Date(appState.playerData.lastSync);
+      document.getElementById('player-last-sync').innerText = '⏳ ' + syncDate.toLocaleString();
+    }
   }
 }
 
@@ -291,17 +312,17 @@ function switchSection(section) {
     decBtn.className = "flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition text-center text-slate-400 hover:text-slate-200";
     
     colView.classList.remove('hidden');
-    colView.classList.add('flex');
+    colView.classList.add('flex', 'animate-fade-slide-up');
     decView.classList.add('hidden');
-    decView.classList.remove('flex-col');
+    decView.classList.remove('flex-col', 'animate-fade-slide-up');
   } else {
     decBtn.className = "flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition text-center bg-pink-600 text-white shadow-md";
     colBtn.className = "flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition text-center text-slate-400 hover:text-slate-200";
     
     decView.classList.remove('hidden');
-    decView.classList.add('flex-col');
+    decView.classList.add('flex-col', 'animate-fade-slide-up');
     colView.classList.add('hidden');
-    colView.classList.remove('flex');
+    colView.classList.remove('flex', 'animate-fade-slide-up');
     
     renderActiveDeck();
     updateRecommendations();
@@ -330,7 +351,7 @@ function setupEventListeners() {
   syncBtn.addEventListener('click', () => {
     const tag = tagInput.value.trim();
     if (!tag || tag === '#') {
-      alert('Por favor introduce un tag de jugador válido (ej: #G2LPQ0YV)');
+      showToast('Por favor introduce un tag de jugador válido (ej: #G2LPQ0YV)', 'warning');
       return;
     }
     fetchPlayerData(tag);
@@ -389,6 +410,30 @@ function setupEventListeners() {
     });
   }
 
+  const typeFilter = document.getElementById('collection-filter-type');
+  if (typeFilter) {
+    typeFilter.addEventListener('change', (e) => {
+      appState.filters.type = e.target.value;
+      renderCollection();
+    });
+  }
+
+  const elixirFilter = document.getElementById('collection-filter-elixir');
+  if (elixirFilter) {
+    elixirFilter.addEventListener('change', (e) => {
+      appState.filters.elixir = e.target.value;
+      renderCollection();
+    });
+  }
+
+  const statusFilter = document.getElementById('collection-filter-status');
+  if (statusFilter) {
+    statusFilter.addEventListener('change', (e) => {
+      appState.filters.status = e.target.value;
+      renderCollection();
+    });
+  }
+
   // Búsqueda en el Bottom Sheet
   const bottomSheetSearchInput = document.getElementById('bottom-sheet-search');
   if (bottomSheetSearchInput) {
@@ -417,6 +462,8 @@ async function fetchPlayerData(tag) {
   
   syncBtn.disabled = true;
   spinner.classList.remove('hidden');
+  
+  renderCollectionSkeletons();
 
   try {
     let apiUrl = '/api/player?tag=' + encodeURIComponent(tag);
@@ -426,6 +473,9 @@ async function fetchPlayerData(tag) {
 
     const response = await fetch(apiUrl);
     const data = await response.json();
+    
+    // Asignar el último momento de sincronización
+    data.lastSync = new Date().toISOString();
 
     if (!response.ok || data.error) {
       throw new Error(data.error || 'Error al conectar con el servidor.');
@@ -433,26 +483,33 @@ async function fetchPlayerData(tag) {
 
     appState.playerData = data;
     saveToLocalStorage();
-    buildCollection();
     
+    // Update profile UI specifically
     document.getElementById('player-profile-panel').classList.remove('hidden');
-    document.getElementById('player-name').innerText = data.name;
-    document.getElementById('player-tag-display').innerText = data.tag;
-    document.getElementById('player-trophies').innerText = data.trophies;
-    document.getElementById('player-arena').innerText = data.arena ? data.arena.name : 'Arena Desconocida';
-    document.getElementById('player-clan').innerText = data.clan ? data.clan.name : 'Sin Clan';
-    document.getElementById('player-crown-level').innerText = 'Nivel ' + (data.expLevel || '-');
-    document.getElementById('player-challenge-wins').innerText = (data.challengeMaxWins || '0') + ' 🏆';
+    document.getElementById('player-name').innerText = appState.playerData.name;
+    document.getElementById('player-tag-display').innerText = appState.playerData.tag;
+    document.getElementById('player-trophies').innerText = appState.playerData.trophies;
+    document.getElementById('player-arena').innerText = appState.playerData.arena ? appState.playerData.arena.name : '';
+    document.getElementById('player-clan').innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
+    document.getElementById('player-crown-level').innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
+    document.getElementById('player-challenge-wins').innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
+    if (appState.playerData.lastSync) {
+      const syncDate = new Date(appState.playerData.lastSync);
+      document.getElementById('player-last-sync').innerText = '⏳ ' + syncDate.toLocaleString();
+    }
+
+    buildCollection();
+    // Fin del update de UI
 
     saveSearchHistory({ tag: data.tag, name: data.name });
 
     renderCollection();
     updateRecommendations();
     
-    alert(`Sincronización exitosa: ¡Hola, ${data.name}!`);
+    showToast(`Sincronización exitosa: ¡Hola, ${data.name}!`, 'success');
   } catch (error) {
     console.error(error);
-    alert('Error de Sincronización: ' + error.message + '\n(Asegúrate de que el servidor dev_server.py esté encendido si estás probando localmente).');
+    showToast('Error de Sincronización: ' + error.message + '\n(Asegúrate de que el servidor dev_server.py esté encendido si estás probando localmente).', 'error');
   } finally {
     syncBtn.disabled = false;
     spinner.classList.add('hidden');
@@ -462,6 +519,17 @@ async function fetchPlayerData(tag) {
 // ----------------------------------------------------
 // RENDERS DE SECCIONES DE LA INTERFAZ
 // ----------------------------------------------------
+
+function renderCollectionSkeletons() {
+  const grid = document.getElementById('collection-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < 8; i++) {
+    const skel = document.createElement('div');
+    skel.className = 'skeleton skeleton-card glass-panel w-full';
+    grid.appendChild(skel);
+  }
+}
 
 // 1. Render de la colección de cartas (Grid principal)
 function renderCollection() {
@@ -483,24 +551,62 @@ function renderCollection() {
     if (appState.filters.onlyEvo && !card.evolutionIconUrl) {
       return false;
     }
+
+    // Filtro por Tipo
+    if (appState.filters.type !== 'all') {
+      const isSpell = ALL_SPELLS.includes(card.name);
+      const isBuilding = BUILDINGS.includes(card.name);
+      const isTroop = !isSpell && !isBuilding;
+      if (appState.filters.type === 'spell' && !isSpell) return false;
+      if (appState.filters.type === 'building' && !isBuilding) return false;
+      if (appState.filters.type === 'troop' && !isTroop) return false;
+    }
+
+    // Filtro por Elixir
+    if (appState.filters.elixir !== 'all') {
+      const targetElixir = parseInt(appState.filters.elixir);
+      if (targetElixir === 7) {
+        if (card.elixirCost < 7) return false;
+      } else {
+        if (card.elixirCost !== targetElixir) return false;
+      }
+    }
+
+    // Filtro por Estado (Status)
+    if (appState.filters.status !== 'all') {
+      const targetLvl = appState.targetLevels[card.id] || 15;
+      const spanishRarity = translateRarity(card.rarity);
+      const costs = calculateUpgradeCost(spanishRarity, card.currentLevel, targetLvl, card.count);
+      
+      if (appState.filters.status === 'max' && card.currentLevel >= targetLvl) return false;
+      if (appState.filters.status === 'ready' && (card.currentLevel >= targetLvl || !costs.isReady)) return false;
+      if (appState.filters.status === 'cards_missing' && (card.currentLevel >= targetLvl || costs.cardsNeeded === 0)) return false;
+    }
+
     return true;
   });
+
+  const counterEl = document.getElementById('collection-counter');
+  if (counterEl) {
+    counterEl.innerText = `${filteredCards.length}/${appState.collection.length}`;
+  }
 
   sortCardsList(filteredCards, appState.collectionSortBy);
 
   if (filteredCards.length === 0) {
-    grid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-8">No se encontraron cartas con los filtros actuales.</div>`;
+    grid.innerHTML = `<div class="col-span-full text-center text-slate-400 py-8 animate-fade-slide-up">No se encontraron cartas con los filtros actuales.</div>`;
     return;
   }
 
-  filteredCards.forEach(card => {
+  filteredCards.forEach((card, index) => {
     const spanishRarity = translateRarity(card.rarity);
     const targetLvl = appState.targetLevels[card.id] || 15;
     const costs = calculateUpgradeCost(spanishRarity, card.currentLevel, targetLvl, card.count);
     
     const cardEl = document.createElement('div');
     cardEl.id = `card-node-${card.id}`;
-    cardEl.className = `card-grid-item p-4 glass-panel rounded-3xl flex flex-col justify-between relative overflow-hidden rarity-${card.rarity.toLowerCase()}`;
+    cardEl.className = `card-grid-item p-4 glass-panel rounded-3xl flex flex-col justify-between relative overflow-hidden rarity-${card.rarity.toLowerCase()} animate-fade-slide-up`;
+    cardEl.style.animationDelay = `${(index % 20) * 0.05}s`;
     
     // Insignias dinámicas de la tarjeta (Evolución o Héroe)
     let badgesHTML = '';
@@ -538,8 +644,26 @@ function renderCollection() {
       cardIconUrl = card.heroIconUrl;
     }
 
+    let progressPercent = 0;
+    if (card.currentLevel < targetLvl) {
+      const nextLevelStr = String(card.currentLevel + 1);
+      const step = CR_COSTS[spanishRarity] ? CR_COSTS[spanishRarity][nextLevelStr] : null;
+      if (step && step.c > 0) {
+        progressPercent = Math.min(100, Math.round((card.count / step.c) * 100));
+      }
+    } else {
+      progressPercent = 100;
+    }
+    
+    const progressBarHTML = `
+      <div class="card-progress-container mt-2">
+        <div class="card-progress-bar" style="width: ${progressPercent}%;"></div>
+      </div>
+    `;
+
     // Diseñar tarjeta centrada con IMAGEN GRANDE (más protagonismo)
     cardEl.innerHTML = `
+      <div class="elixir-badge">${card.elixirCost || 0}</div>
       ${badgesHTML}
       <div class="flex flex-col items-center gap-3 text-center">
         <!-- Imagen más grande y destacada en el centro -->
@@ -557,6 +681,7 @@ function renderCollection() {
               (${card.count} cps)
             </span>
           </div>
+          ${progressBarHTML}
         </div>
       </div>
 
@@ -594,6 +719,89 @@ function renderCollection() {
 
     grid.appendChild(cardEl);
   });
+
+  calculateCollectionLevel();
+  calculateGlobalStats();
+}
+
+function calculateCollectionLevel() {
+  let totalXP = 0;
+  let evosCount = 0;
+  let heroesCount = 0;
+
+  appState.collection.forEach(card => {
+    if (!card.isPlayerOwned) return;
+    totalXP += card.currentLevel;
+    
+    // Check evos
+    if (card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name)) {
+      evosCount++;
+    }
+    // Check heroes
+    if (card.evolutionLevel > 0 && HERO_CARDS.includes(card.name)) {
+      heroesCount++;
+    }
+  });
+
+  const rawPoints = totalXP + (evosCount * 5) + (heroesCount * 5);
+  const maxXP = 2265;
+  const progressPercent = Math.min(100, (rawPoints / maxXP) * 100).toFixed(1);
+
+  const lvlDisplay = document.getElementById('collection-level-display');
+  const nextMilestone = document.getElementById('collection-next-milestone');
+  const progressBar = document.getElementById('collection-level-progress');
+
+  if (lvlDisplay) lvlDisplay.innerText = rawPoints;
+  if (nextMilestone) nextMilestone.innerText = `${progressPercent}%`;
+  if (progressBar) progressBar.style.width = `${progressPercent}%`;
+}
+
+function calculateGlobalStats() {
+  const statsGrid = document.getElementById('global-stats-grid');
+  if (!statsGrid) return;
+
+  let maxedCards = 0;
+  let totalGoldNeeded = 0;
+  let totalCardsNeeded = 0;
+  let totalEvos = 0;
+  let totalHeroes = 0;
+
+  appState.collection.forEach(card => {
+    if (!card.isPlayerOwned) return;
+    
+    const targetLvl = appState.targetLevels[card.id] || 15;
+    const spanishRarity = translateRarity(card.rarity);
+    const costs = calculateUpgradeCost(spanishRarity, card.currentLevel, targetLvl, card.count);
+    
+    if (card.currentLevel >= targetLvl) {
+      maxedCards++;
+    }
+    
+    totalGoldNeeded += costs.goldNeeded;
+    totalCardsNeeded += costs.cardsNeeded;
+
+    if (card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name)) totalEvos++;
+    if (card.evolutionLevel > 0 && HERO_CARDS.includes(card.name)) totalHeroes++;
+  });
+
+  statsGrid.innerHTML = `
+    <div class="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
+      <span class="text-[10px] text-slate-500 font-bold uppercase">Cartas Maxeadas</span>
+      <span class="text-lg font-black text-amber-400 mt-1">${maxedCards}</span>
+    </div>
+    <div class="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
+      <span class="text-[10px] text-slate-500 font-bold uppercase">Oro Restante</span>
+      <span class="text-lg font-black text-yellow-500 mt-1">${totalGoldNeeded.toLocaleString()}</span>
+    </div>
+    <div class="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
+      <span class="text-[10px] text-slate-500 font-bold uppercase">Cartas Restantes</span>
+      <span class="text-lg font-black text-emerald-400 mt-1">${totalCardsNeeded.toLocaleString()}</span>
+    </div>
+    <div class="flex flex-col bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
+      <span class="text-[10px] text-slate-500 font-bold uppercase">Evos / Héroes</span>
+      <span class="text-lg font-black text-pink-400 mt-1">${totalEvos} / ${totalHeroes}</span>
+    </div>
+  `;
 }
 
 window.setTargetLevel = function(cardId, newLvl) {
@@ -718,14 +926,14 @@ function renderActiveDeck() {
       if (cardA) {
         const dbCardA = appState.collection.find(c => c.id === cardA.cardId);
         if (!isCardEligibleForSlot(dbCardA, index, cardA.isEvolved, cardA.isHero)) {
-          alert(`La carta "${cardA.name}" no es válida para el Slot ${index + 1} debido a las restricciones de tipo.`);
+          showToast(`La carta "${cardA.name}" no es válida para el Slot ${index + 1} debido a las restricciones de tipo.`, 'error');
           return;
         }
       }
       if (cardB) {
         const dbCardB = appState.collection.find(c => c.id === cardB.cardId);
         if (!isCardEligibleForSlot(dbCardB, fromIndex, cardB.isEvolved, cardB.isHero)) {
-          alert(`La carta "${cardB.name}" no es válida para el Slot ${fromIndex + 1} debido a las restricciones de tipo.`);
+          showToast(`La carta "${cardB.name}" no es válida para el Slot ${fromIndex + 1} debido a las restricciones de tipo.`, 'error');
           return;
         }
       }
@@ -984,13 +1192,13 @@ function selectCardForSlot(card, isEvolved, isHero) {
 function saveActiveDeck() {
   const name = appState.activeDeckName.trim();
   if (!name) {
-    alert('Introduce un nombre para el mazo favorito antes de guardar.');
+    showToast('Introduce un nombre para el mazo favorito antes de guardar.', 'warning');
     return;
   }
 
   const hasCards = appState.activeDeck.some(s => s !== null);
   if (!hasCards) {
-    alert('Añade al menos una carta al mazo antes de guardarlo.');
+    showToast('Añade al menos una carta al mazo antes de guardarlo.', 'warning');
     return;
   }
 
@@ -1008,7 +1216,7 @@ function saveActiveDeck() {
 
   renderSavedDecks();
   updateRecommendations();
-  alert(`Mazo "${name}" guardado en favoritos.`);
+  showToast(`Mazo "${name}" guardado en favoritos.`, 'success');
 }
 
 function renderSavedDecks() {
@@ -1085,7 +1293,7 @@ window.loadSavedDeckIntoActive = function(deckId) {
     document.getElementById('deck-name-input').value = deck.name;
     switchSection('decks');
     renderActiveDeck();
-    alert(`Mazo "${deck.name}" cargado en el editor.`);
+    showToast(`Mazo "${deck.name}" cargado en el editor.`, 'info');
   }
 };
 
@@ -1104,7 +1312,7 @@ function exportActiveDeck() {
     .map(slot => slot.cardId);
 
   if (cardIds.length !== 8) {
-    alert('Para poder exportar a Clash Royale, el mazo debe tener exactamente 8 cartas completas.');
+    showToast('Para poder exportar a Clash Royale, el mazo debe tener exactamente 8 cartas completas.', 'warning');
     return;
   }
 
@@ -1386,7 +1594,7 @@ function copyDeckLink() {
     .map(slot => slot.cardId);
 
   if (cardIds.length !== 8) {
-    alert('Para poder copiar el enlace del mazo, este debe tener exactamente 8 cartas completas.');
+    showToast('Para poder copiar el enlace del mazo, este debe tener exactamente 8 cartas completas.', 'warning');
     return;
   }
 
@@ -1400,7 +1608,7 @@ function copyDeckLink() {
     }, 2000);
   }).catch(err => {
     console.error('Error al copiar: ', err);
-    alert('No se pudo copiar el enlace automáticamente. Aquí lo tienes: ' + link);
+    showToast('No se pudo copiar el enlace automáticamente. Aquí lo tienes: ' + link, 'info');
   });
 }
 
@@ -1590,6 +1798,62 @@ function runDeckChecker(cards) {
       wincondPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-red-500/40 bg-red-950/10 transition";
     }
   }
+}
+
+// ----------------------------------------------------
+// SISTEMA DE TOASTS (Notificaciones)
+// ----------------------------------------------------
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  let icon = 'ℹ️';
+  let title = 'Información';
+  if (type === 'success') { icon = '✅'; title = 'Éxito'; }
+  else if (type === 'error') { icon = '❌'; title = 'Error'; }
+  else if (type === 'warning') { icon = '⚠️'; title = 'Atención'; }
+
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">
+      <span class="toast-title">${title}</span>
+      <span class="toast-message">${message}</span>
+    </div>
+    <button class="toast-close">&times;</button>
+  `;
+
+  container.appendChild(toast);
+
+  // Animar entrada
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+  });
+
+  // Botón cerrar
+  const closeBtn = toast.querySelector('.toast-close');
+  closeBtn.addEventListener('click', () => {
+    hideToast(toast);
+  });
+
+  // Auto-ocultar
+  if (duration > 0) {
+    setTimeout(() => {
+      hideToast(toast);
+    }, duration);
+  }
+}
+
+function hideToast(toast) {
+  toast.classList.remove('show');
+  toast.classList.add('hide');
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.parentNode.removeChild(toast);
+    }
+  }, 300); // Mismo tiempo que la transición en CSS
 }
 
 // ----------------------------------------------------

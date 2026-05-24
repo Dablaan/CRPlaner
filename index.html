@@ -107,6 +107,7 @@
               <div class="flex items-center gap-2">
                 <h4 id="player-name" class="font-extrabold text-base text-slate-100 truncate">Nombre Jugador</h4>
                 <span id="player-tag-display" class="text-xs text-slate-500 font-mono">#TAG</span>
+                <span id="player-last-sync" class="text-[10px] text-slate-400 font-mono ml-2"></span>
               </div>
               <p id="player-arena" class="text-xs text-slate-400 mt-0.5">Arena</p>
             </div>
@@ -139,6 +140,7 @@
           <div class="flex items-center justify-between border-b border-slate-800/60 pb-2.5 flex-wrap gap-2">
             <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
               <span>🎴</span> Tu Inventario y Progresión
+              <span id="collection-counter" class="text-[10px] md:text-xs text-slate-500 font-bold ml-1 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-800">0/0</span>
             </h3>
             <div class="flex items-center gap-2">
               <span class="text-[10px] md:text-xs text-slate-400 font-bold">Objetivo Global:</span>
@@ -158,15 +160,40 @@
             >
             <div class="flex gap-2">
               <!-- Ordenador en la Colección -->
-              <select id="collection-sort-by" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs md:text-sm text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
-                <option value="name-asc">🔠 Nombre: A-Z</option>
-                <option value="name-desc">🔠 Nombre: Z-A</option>
-                <option value="level-desc">📈 Nivel: Mayor a Menor</option>
-                <option value="level-asc">📉 Nivel: Menor a Mayor</option>
-                <option value="rarity-desc">💎 Rareza: Mayor a Menor</option>
-                <option value="rarity-asc">💎 Rareza: Menor a Mayor</option>
-                <option value="elixir-desc">⚡ Elixir: Mayor a Menor</option>
-                <option value="elixir-asc">⚡ Elixir: Menor a Mayor</option>
+              <select id="collection-sort-by" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-[10px] md:text-xs text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+                <option value="name-asc">🔠 A-Z</option>
+                <option value="name-desc">🔠 Z-A</option>
+                <option value="level-desc">📈 Nivel +</option>
+                <option value="level-asc">📉 Nivel -</option>
+                <option value="rarity-desc">💎 Rareza +</option>
+                <option value="rarity-asc">💎 Rareza -</option>
+                <option value="elixir-desc">⚡ Elixir +</option>
+                <option value="elixir-asc">⚡ Elixir -</option>
+              </select>
+
+              <select id="collection-filter-type" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-[10px] md:text-xs text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+                <option value="all">Tipos</option>
+                <option value="troop">Tropa</option>
+                <option value="spell">Hechizo</option>
+                <option value="building">Edificio</option>
+              </select>
+
+              <select id="collection-filter-elixir" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-[10px] md:text-xs text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+                <option value="all">Elixir</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7+</option>
+              </select>
+
+              <select id="collection-filter-status" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-[10px] md:text-xs text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+                <option value="all">Estado</option>
+                <option value="max">Maxeada</option>
+                <option value="ready">Lista (Oro)</option>
+                <option value="cards_missing">Faltan Cartas</option>
               </select>
               <label class="flex items-center gap-2 cursor-pointer bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-xs md:text-sm select-none shadow-inner">
                 <input type="checkbox" id="filter-evo-toggle" class="accent-pink-600">
@@ -184,6 +211,40 @@
             <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="champion" style="--rarity-color: var(--rarity-champion)">Campeón</button>
           </div>
         </div>
+
+        <!-- PANEL DE NIVEL DE COLECCIÓN -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 flex items-center justify-between shadow-inner">
+          <div class="flex items-center gap-4">
+            <div class="relative w-12 h-12 flex items-center justify-center bg-slate-950 rounded-full border-2 border-pink-600 shadow-lg">
+              <span id="collection-level-display" class="font-black text-sm md:text-base text-white">0</span>
+            </div>
+            <div>
+              <h4 class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Nivel de Colección (XP)</h4>
+              <p class="text-[9px] md:text-[10px] text-slate-500 mt-0.5">
+                Progreso hasta 2265 XP: <span id="collection-next-milestone" class="text-slate-300 font-bold">0%</span>
+              </p>
+            </div>
+          </div>
+          <div class="w-1/3 max-w-xs">
+            <div class="card-progress-container !mt-0 h-2 md:h-3 bg-slate-950 border border-slate-800">
+              <div id="collection-level-progress" class="card-progress-bar bg-gradient-to-r from-pink-600 to-purple-600" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL DE ESTADÍSTICAS GLOBALES -->
+        <details class="bg-slate-900 border border-slate-800 rounded-2xl mb-4 shadow-inner group">
+          <summary class="p-4 cursor-pointer flex items-center justify-between outline-none select-none">
+            <div class="flex items-center gap-2">
+              <span>📊</span>
+              <h4 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400">Estadísticas de Cuenta</h4>
+            </div>
+            <span class="text-slate-500 transition-transform group-open:rotate-180">▼</span>
+          </summary>
+          <div class="p-4 border-t border-slate-800/50 grid grid-cols-2 md:grid-cols-4 gap-4" id="global-stats-grid">
+            <!-- Rellenado por JS -->
+          </div>
+        </details>
 
         <!-- Cuadrícula Infinita de Cartas (Con 4 columnas en desktop md:grid-cols-4) -->
         <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -362,6 +423,9 @@
       <!-- Generado por JS -->
     </div>
   </div>
+
+  <!-- CONTENEDOR DE TOASTS -->
+  <div id="toast-container"></div>
 
   <!-- Scripts -->
   <script src="cards_db.js"></script>
