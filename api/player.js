@@ -51,7 +51,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const apiResponse = await fetch(`https://api.clashroyale.com/v1/players/${apiTag}`, {
+    const apiResponse = await fetch(`https://proxy.royaleapi.dev/v1/players/${apiTag}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Accept': 'application/json'

@@ -40,7 +40,7 @@ class DevRequestHandler(http.server.SimpleHTTPRequestHandler):
                     tag_formatted = '#' + tag_formatted
                 api_tag = tag_formatted.replace('#', '%23')
                 
-                req_url = f"https://api.clashroyale.com/v1/players/{api_tag}"
+                req_url = f"https://proxy.royaleapi.dev/v1/players/{api_tag}"
                 req = urllib.request.Request(req_url)
                 req.add_header('Authorization', f'Bearer {api_key}')
                 req.add_header('Accept', 'application/json')
