@@ -273,3 +273,298 @@ input:focus, select:focus {
   box-shadow: 0 0 10px rgba(219, 39, 119, 0.25);
   border-color: rgba(219, 39, 119, 0.6) !important;
 }
+
+/* Transiciones para Tema Claro/Oscuro */
+body, .glass-panel, input, select, nav, .filter-chip, .target-lvl-btn, .history-item {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+/* Drag & Drop Visuals */
+.deck-slot-hover {
+  border-color: var(--color-elixir) !important;
+  background-color: rgba(219, 39, 119, 0.12) !important;
+  box-shadow: 0 0 15px rgba(219, 39, 119, 0.3) !important;
+  transform: scale(1.02);
+}
+.deck-slot-dragging {
+  opacity: 0.4;
+  border-style: dashed !important;
+}
+
+/* Historial de Cuentas Sincronizadas */
+.history-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+.history-item:last-child {
+  border-bottom: none;
+}
+.history-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.delete-history-item:hover {
+  color: #ef4444 !important;
+}
+
+/* Liquid Light Theme Variables & Overrides */
+body.light-theme {
+  --color-bg-dark: #f8fafc;
+  --color-bg-card: rgba(255, 255, 255, 0.65);
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-border-glow: rgba(219, 39, 119, 0.2);
+  --color-text-light: #0f172a;
+  
+  background-color: var(--color-bg-dark);
+  background-image: 
+    radial-gradient(at 15% 15%, rgba(219, 39, 119, 0.1) 0px, transparent 60%),
+    radial-gradient(at 85% 85%, rgba(59, 130, 246, 0.08) 0px, transparent 65%),
+    radial-gradient(at 50% 50%, rgba(248, 250, 252, 0.95) 0px, var(--color-bg-dark) 100%);
+  color: var(--color-text-light);
+}
+
+body.light-theme .glass-panel {
+  box-shadow: 
+    0 10px 30px 0 rgba(15, 23, 42, 0.05),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .glass-panel:hover {
+  border-color: rgba(15, 23, 42, 0.15);
+  box-shadow: 
+    0 15px 35px 0 rgba(15, 23, 42, 0.09),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.light-theme input, 
+body.light-theme select {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+body.light-theme input::placeholder {
+  color: #94a3b8;
+}
+
+body.light-theme nav {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme nav button:not(.bg-pink-600) {
+  color: #64748b;
+}
+
+body.light-theme nav button:not(.bg-pink-600):hover {
+  color: #0f172a;
+}
+
+body.light-theme #player-profile-panel {
+  background-color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme #player-profile-panel #player-name {
+  color: #0f172a;
+}
+
+body.light-theme #player-profile-panel #player-arena {
+  color: #475569;
+}
+
+body.light-theme #player-profile-panel .bg-slate-900\/50 {
+  background-color: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+body.light-theme #player-profile-panel .bg-slate-900\/90 {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .card-grid-item h4 {
+  color: #0f172a;
+}
+
+body.light-theme .card-grid-item .target-lvl-btn:not(.bg-pink-600) {
+  color: #64748b;
+}
+
+body.light-theme .card-grid-item .target-lvl-btn {
+  background: transparent;
+}
+
+body.light-theme .card-grid-item .target-lvl-btn.bg-pink-600 {
+  background: #db2777;
+}
+
+body.light-theme .card-grid-item .flex.bg-slate-950 {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+body.light-theme .card-grid-item .bg-slate-950\/60 {
+  background-color: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+body.light-theme .card-grid-item .text-slate-400 {
+  color: #475569;
+}
+
+body.light-theme .card-grid-item .text-slate-500 {
+  color: #64748b;
+}
+
+body.light-theme .bottom-sheet {
+  background: rgba(255, 255, 255, 0.98);
+  border-top-color: rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+}
+
+body.light-theme .bottom-sheet h3 {
+  color: #0f172a;
+}
+
+body.light-theme .bottom-sheet input,
+body.light-theme .bottom-sheet select {
+  background-color: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+body.light-theme .sheet-tab {
+  background: rgba(15, 23, 42, 0.03);
+  color: #64748b;
+}
+
+body.light-theme .sheet-tab.active {
+  background: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+body.light-theme .bottom-sheet #bottom-sheet-cards-list .bg-slate-950 {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .bottom-sheet #bottom-sheet-cards-list .bg-slate-950 h6 {
+  color: #0f172a;
+}
+
+body.light-theme .bottom-sheet #bottom-sheet-cards-list .bg-slate-950 p {
+  color: #64748b;
+}
+
+body.light-theme .card-grid-item .relative.w-28 {
+  background-color: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+body.light-theme .filter-chip {
+  background: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.05);
+  color: #475569;
+}
+
+body.light-theme .filter-chip:hover {
+  background: rgba(15, 23, 42, 0.06);
+}
+
+body.light-theme .filter-chip.active {
+  color: #ffffff;
+  box-shadow: 0 0 12px var(--rarity-color);
+}
+
+body.light-theme .bg-slate-950\/20 {
+  background-color: rgba(15, 23, 42, 0.03);
+}
+
+body.light-theme .bg-slate-950\/60 {
+  background-color: rgba(15, 23, 42, 0.03);
+  border-color: rgba(15, 23, 42, 0.05);
+}
+
+body.light-theme #btn-export-deck,
+body.light-theme #btn-copy-deck-link,
+body.light-theme #btn-save-deck {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: #475569;
+}
+
+body.light-theme #btn-export-deck:hover,
+body.light-theme #btn-copy-deck-link:hover,
+body.light-theme #btn-save-deck:hover {
+  color: #db2777;
+  border-color: rgba(219, 39, 119, 0.4);
+}
+
+body.light-theme #deck-name-input {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+body.light-theme #checker-air,
+body.light-theme #checker-spells,
+body.light-theme #checker-wincond {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+body.light-theme #checker-air.bg-emerald-950\/10,
+body.light-theme #checker-spells.bg-emerald-950\/10,
+body.light-theme #checker-wincond.bg-emerald-950\/10 {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+body.light-theme #checker-air.bg-yellow-950\/10,
+body.light-theme #checker-spells.bg-yellow-950\/10,
+body.light-theme #checker-wincond.bg-yellow-950\/10 {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+body.light-theme #checker-air.bg-red-950\/10,
+body.light-theme #checker-spells.bg-red-950\/10,
+body.light-theme #checker-wincond.bg-red-950\/10 {
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+body.light-theme #checker-air h5,
+body.light-theme #checker-spells h5,
+body.light-theme #checker-wincond h5 {
+  color: #0f172a;
+}
+
+body.light-theme #recommendations-container button {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #475569;
+}
+
+body.light-theme #recommendations-container button:hover {
+  color: #db2777;
+}
+
+body.light-theme #search-history-dropdown {
+  background-color: rgba(255, 255, 255, 0.98);
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+body.light-theme #search-history-dropdown div {
+  color: #0f172a;
+}
+
+body.light-theme #search-history-dropdown .history-item {
+  border-bottom-color: rgba(15, 23, 42, 0.05);
+}
+
+body.light-theme #search-history-dropdown .history-item:hover {
+  background-color: rgba(15, 23, 42, 0.04);
+}
+
+body.light-theme #search-history-dropdown .history-item span.text-slate-200 {
+  color: #0f172a;
+}

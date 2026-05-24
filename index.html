@@ -38,8 +38,17 @@
           <p class="text-[10px] md:text-xs text-slate-500 uppercase tracking-widest font-bold">Planificación de Progresión Competitiva 2026</p>
         </div>
       </div>
-      <div class="text-right">
-        <span class="text-xs bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-400 font-bold select-none shadow-inner">Fase Alpha</span>
+      <div class="flex items-center gap-2.5">
+        <button 
+          id="btn-theme-toggle" 
+          class="w-10 h-10 rounded-xl bg-slate-905 border border-slate-800 flex items-center justify-center text-base hover:border-slate-700 transition shadow-inner select-none"
+          title="Alternar Modo Claro/Oscuro"
+        >
+          🌙
+        </button>
+        <div class="text-right">
+          <span class="text-xs bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-400 font-bold select-none shadow-inner">Fase Alpha</span>
+        </div>
       </div>
     </header>
 
@@ -69,36 +78,57 @@
         <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
           <span>🔗</span> Sincronizar Cuenta de Clash Royale
         </h3>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <input 
-            type="text" 
-            id="player-tag-input" 
-            placeholder="#TAGJUGADOR" 
-            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm md:text-base text-slate-200 placeholder-slate-600 focus:outline-none focus:border-pink-500 transition font-mono uppercase shadow-inner"
-          >
-          <button 
-            id="btn-sync-player" 
-            class="btn-primary px-6 py-2.5 rounded-xl text-sm md:text-base font-bold text-white flex items-center justify-center gap-2 shadow-lg"
-          >
-            <span>Sincronizar</span>
-            <svg id="sync-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          </button>
+        <div class="relative w-full flex flex-col gap-3">
+          <div class="flex flex-col sm:flex-row gap-3 w-full">
+            <input 
+              type="text" 
+              id="player-tag-input" 
+              placeholder="#TAGJUGADOR" 
+              class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm md:text-base text-slate-200 placeholder-slate-600 focus:outline-none focus:border-pink-500 transition font-mono uppercase shadow-inner"
+            >
+            <button 
+              id="btn-sync-player" 
+              class="btn-primary px-6 py-2.5 rounded-xl text-sm md:text-base font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+            >
+              <span>Sincronizar</span>
+              <svg id="sync-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </button>
+          </div>
+          <!-- Historial de Cuentas Sincronizadas -->
+          <div id="search-history-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-30 overflow-hidden font-sans"></div>
         </div>
 
-        <div id="player-profile-panel" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between shadow-inner">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <h4 id="player-name" class="font-extrabold text-base text-slate-100 truncate">Nombre Jugador</h4>
-              <span id="player-tag-display" class="text-xs text-slate-500 font-mono">#TAG</span>
+        <div id="player-profile-panel" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col gap-3 shadow-inner">
+          <div class="flex items-center justify-between">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h4 id="player-name" class="font-extrabold text-base text-slate-100 truncate">Nombre Jugador</h4>
+                <span id="player-tag-display" class="text-xs text-slate-500 font-mono">#TAG</span>
+              </div>
+              <p id="player-arena" class="text-xs text-slate-400 mt-0.5">Arena</p>
             </div>
-            <p id="player-arena" class="text-xs text-slate-400 mt-1">Arena</p>
+            <div class="text-right flex-shrink-0 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl">
+              <p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Trofeos</p>
+              <p id="player-trophies" class="text-sm md:text-base font-black text-amber-400">0</p>
+            </div>
           </div>
-          <div class="text-right flex-shrink-0 bg-slate-900/90 border border-slate-800 p-2 rounded-lg">
-            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trofeos</p>
-            <p id="player-trophies" class="text-base font-black text-amber-400">0</p>
+          <!-- Estadísticas de Perfil Ampliadas -->
+          <div class="grid grid-cols-3 gap-2 border-t border-slate-800/80 pt-2.5 text-xs">
+            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[9px] text-slate-500 font-bold uppercase">Clan</span>
+              <span id="player-clan" class="font-bold text-slate-200 truncate mt-0.5">-</span>
+            </div>
+            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[9px] text-slate-500 font-bold uppercase">Nivel de Torre</span>
+              <span id="player-crown-level" class="font-bold text-slate-200 mt-0.5">-</span>
+            </div>
+            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
+              <span class="text-[9px] text-slate-500 font-bold uppercase">Victorias Desafío</span>
+              <span id="player-challenge-wins" class="font-bold text-slate-200 mt-0.5">-</span>
+            </div>
           </div>
         </div>
       </section>
@@ -106,10 +136,17 @@
       <!-- Panel de la Colección Grid -->
       <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
         <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800/60 pb-2.5 flex-wrap gap-2">
             <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
               <span>🎴</span> Tu Inventario y Progresión
             </h3>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] md:text-xs text-slate-400 font-bold">Objetivo Global:</span>
+              <div class="flex bg-slate-950 p-0.5 rounded-xl border border-slate-800">
+                <button id="btn-global-target-15" class="px-2.5 py-0.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-slate-200">15</button>
+                <button id="btn-global-target-16" class="px-2.5 py-0.5 rounded-lg text-xs font-black transition text-slate-400 hover:text-slate-200">16</button>
+              </div>
+            </div>
           </div>
           
           <div class="flex flex-col md:flex-row gap-3">
@@ -148,8 +185,8 @@
           </div>
         </div>
 
-        <!-- Cuadrícula Infinita de Cartas (Quitado max-height y overflow para scroll nativo de página) -->
-        <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Cuadrícula Infinita de Cartas (Con 4 columnas en desktop md:grid-cols-4) -->
+        <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <!-- Generado por JS -->
         </div>
       </section>
@@ -173,29 +210,78 @@
 
       <!-- Constructor de Mazos -->
       <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-2">
           <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
             <span>⚔️</span> Editor de Mazo Activo
           </h3>
-          <button 
-            id="btn-export-deck" 
-            class="text-xs text-slate-400 hover:text-pink-500 border border-slate-800 bg-slate-950 px-3.5 py-1 rounded-xl font-bold transition flex items-center gap-1.5 shadow"
-          >
-            <span>📤 Exportar</span>
-          </button>
+          <div class="flex gap-2">
+            <button 
+              id="btn-copy-deck-link" 
+              class="text-xs text-slate-400 hover:text-pink-500 border border-slate-800 bg-slate-950 px-3.5 py-1 rounded-xl font-bold transition flex items-center gap-1.5 shadow"
+            >
+              <span>🔗 Copiar Enlace</span>
+            </button>
+            <button 
+              id="btn-export-deck" 
+              class="text-xs text-slate-400 hover:text-pink-500 border border-slate-800 bg-slate-950 px-3.5 py-1 rounded-xl font-bold transition flex items-center gap-1.5 shadow"
+            >
+              <span>📤 Exportar</span>
+            </button>
+          </div>
         </div>
 
         <div id="deck-slots-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <!-- Generado por JS -->
         </div>
 
+        <!-- Asistente de Construcción (Deck Checker) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-950/40 border border-slate-800 rounded-2xl shadow-inner">
+          <div id="checker-air" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-850 transition">
+            <span id="checker-air-icon" class="text-base select-none">⚠️</span>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-slate-200">Ataque Aéreo</h5>
+              <p id="checker-air-text" class="text-[9px] text-slate-500 font-semibold truncate">Cargando...</p>
+            </div>
+          </div>
+          <div id="checker-spells" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-850 transition">
+            <span id="checker-spells-icon" class="text-base select-none">⚠️</span>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-slate-200">Hechizos</h5>
+              <p id="checker-spells-text" class="text-[9px] text-slate-500 font-semibold truncate">Cargando...</p>
+            </div>
+          </div>
+          <div id="checker-wincond" class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-850 transition">
+            <span id="checker-wincond-icon" class="text-base select-none">⚠️</span>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-slate-200">Win Condition</h5>
+              <p id="checker-wincond-text" class="text-[9px] text-slate-500 font-semibold truncate">Cargando...</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Costes del Mazo -->
         <div class="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3.5 shadow-inner">
           <div class="flex items-center justify-between">
-            <span class="text-xs md:text-sm text-slate-400 font-semibold">Oro Total Agrupado:</span>
+            <span class="text-xs md:text-sm text-slate-400 font-semibold">Oro Total Faltante:</span>
             <span id="deck-total-gold" class="text-sm md:text-base font-extrabold text-amber-400">0 🪙</span>
           </div>
-          <div class="space-y-2">
+          
+          <!-- Estadísticas de Elixir y Ciclo -->
+          <div class="grid grid-cols-2 gap-3 border-t border-slate-800/80 pt-3">
+            <div class="flex flex-col bg-slate-950/40 p-2.5 rounded-xl border border-slate-850 animate-pulse-once">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Elixir Medio</span>
+              <span id="deck-average-elixir" class="text-base font-black text-pink-500 mt-0.5">0.0 💧</span>
+            </div>
+            <div class="flex flex-col bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
+              <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ciclo Rápido (4 Cartas)</span>
+              <div class="flex items-center justify-between gap-1 mt-0.5">
+                <span id="deck-fast-cycle" class="text-base font-black text-purple-400">0 💧</span>
+                <div id="deck-fast-cycle-cards" class="flex gap-1 overflow-x-auto select-none max-w-[65px] md:max-w-none"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="space-y-2 border-t border-slate-800/80 pt-3">
             <span class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Desglose por rareza faltante:</span>
             <div id="deck-breakdown-container" class="grid grid-cols-3 gap-2.5 text-xs">
               <!-- Generado por JS -->

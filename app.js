@@ -201,8 +201,11 @@ function calculateUpgradeCost(rarityName, currentLvl, targetLvl, currentCount) {
 function initApp() {
   loadFromLocalStorage();
   buildCollection();
+  setupTheme();
+  loadSearchHistory();
   setupEventListeners();
   renderCollection();
+  updateGlobalTargetUI();
   renderActiveDeck();
   renderSavedDecks();
   updateRecommendations();
@@ -266,6 +269,9 @@ function loadFromLocalStorage() {
     document.getElementById('player-tag-display').innerText = appState.playerData.tag;
     document.getElementById('player-trophies').innerText = appState.playerData.trophies;
     document.getElementById('player-arena').innerText = appState.playerData.arena ? appState.playerData.arena.name : '';
+    document.getElementById('player-clan').innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
+    document.getElementById('player-crown-level').innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
+    document.getElementById('player-challenge-wins').innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
   }
 }
 
@@ -362,6 +368,18 @@ function setupEventListeners() {
 
   document.getElementById('btn-export-deck').addEventListener('click', exportActiveDeck);
 
+  const copyLinkBtn = document.getElementById('btn-copy-deck-link');
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', copyDeckLink);
+  }
+
+  const btn15 = document.getElementById('btn-global-target-15');
+  const btn16 = document.getElementById('btn-global-target-16');
+  if (btn15) btn15.addEventListener('click', () => setGlobalTargetLevel(15));
+  if (btn16) btn16.addEventListener('click', () => setGlobalTargetLevel(16));
+
+  setupHistoryDropdownEvents();
+
   // Ordenamiento de la Colección
   const collectionSort = document.getElementById('collection-sort-by');
   if (collectionSort) {
@@ -422,6 +440,11 @@ async function fetchPlayerData(tag) {
     document.getElementById('player-tag-display').innerText = data.tag;
     document.getElementById('player-trophies').innerText = data.trophies;
     document.getElementById('player-arena').innerText = data.arena ? data.arena.name : 'Arena Desconocida';
+    document.getElementById('player-clan').innerText = data.clan ? data.clan.name : 'Sin Clan';
+    document.getElementById('player-crown-level').innerText = 'Nivel ' + (data.expLevel || '-');
+    document.getElementById('player-challenge-wins').innerText = (data.challengeMaxWins || '0') + ' 🏆';
+
+    saveSearchHistory({ tag: data.tag, name: data.name });
 
     renderCollection();
     updateRecommendations();
@@ -520,7 +543,7 @@ function renderCollection() {
       ${badgesHTML}
       <div class="flex flex-col items-center gap-3 text-center">
         <!-- Imagen más grande y destacada en el centro -->
-        <div class="relative w-24 h-28 flex items-center justify-center bg-slate-950/40 rounded-2xl border border-slate-800/50 p-1.5 shadow-inner">
+        <div class="relative w-28 h-32 flex items-center justify-center bg-slate-950/40 rounded-2xl border border-slate-800/50 p-1.5 shadow-inner">
           <img class="w-full h-full object-contain rounded-xl drop-shadow-lg transition-transform duration-300 hover:scale-105" src="${cardIconUrl}" alt="${card.name}" onerror="this.src='https://placehold.co/100x120/1e293b/ffffff?text=${card.name}'">
         </div>
         <div class="w-full min-w-0">
@@ -545,22 +568,28 @@ function renderCollection() {
         </div>
       </div>
 
-      <div class="mt-3.5 text-xs space-y-1.5">
-        <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg px-2.5 border border-slate-850">
-          <span class="text-slate-400 flex items-center gap-1 font-semibold">
-             <span>🪙</span> Oro
-          </span>
-          <span class="font-extrabold text-amber-300">${costs.goldNeeded.toLocaleString()}</span>
+      ${card.currentLevel >= targetLvl ? `
+        <div class="mt-3.5 py-2.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-xl text-center shadow-inner">
+          <span class="text-xs font-black tracking-widest text-yellow-400 drop-shadow-sm">MAX</span>
         </div>
-        <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg px-2.5 border border-slate-850">
-          <span class="text-slate-400 flex items-center gap-1 font-semibold">
-             <span>🎴</span> Faltan
-          </span>
-          <span class="font-extrabold ${costs.cardsNeeded > 0 ? 'text-red-400' : 'text-emerald-400'}">
-            ${costs.cardsNeeded > 0 ? costs.cardsNeeded.toLocaleString() : '¡Listas!'}
-          </span>
+      ` : `
+        <div class="mt-3.5 text-xs space-y-1.5">
+          <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg px-2.5 border border-slate-850">
+            <span class="text-slate-400 flex items-center gap-1 font-semibold">
+               <span>🪙</span> Oro
+            </span>
+            <span class="font-extrabold text-amber-300">${costs.goldNeeded.toLocaleString()}</span>
+          </div>
+          <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg px-2.5 border border-slate-850">
+            <span class="text-slate-400 flex items-center gap-1 font-semibold">
+               <span>🎴</span> Faltan
+            </span>
+            <span class="font-extrabold ${costs.cardsNeeded > 0 ? 'text-red-400' : 'text-emerald-400'}">
+              ${costs.cardsNeeded > 0 ? costs.cardsNeeded.toLocaleString() : '¡Listas!'}
+            </span>
+          </div>
         </div>
-      </div>
+      `}
     `;
 
     grid.appendChild(cardEl);
@@ -572,6 +601,7 @@ window.setTargetLevel = function(cardId, newLvl) {
   saveToLocalStorage();
   buildCollection();
   renderCollection();
+  updateGlobalTargetUI();
   if (appState.activeSection === 'decks') {
     renderActiveDeck();
     updateRecommendations();
@@ -582,24 +612,6 @@ window.setTargetLevel = function(cardId, newLvl) {
 function renderActiveDeck() {
   const container = document.getElementById('deck-slots-container');
   container.innerHTML = '';
-
-  appState.activeDeck.forEach((slot, index) => {
-    const slotEl = document.createElement('div');
-    let slotLabel = `Slot ${index + 1}`;
-    let restrictionHTML = '';
-
-    if (index === 0) {
-      slotLabel = "Slot 1: Evolución / Normal";
-      restrictionHTML = `<span class="text-[9px] text-pink-400 font-black absolute bottom-2 right-3">EVO / NORMAL</span>`;
-    } else if (index === 1) {
-      slotLabel = "Slot 2: Héroe / Campeón / Normal";
-      restrictionHTML = `<span class="text-[9px] text-amber-400 font-black absolute bottom-2 right-3">HÉROE / CAMPEÓN / NORMAL</span>`;
-    } else if (index === 2) {
-      slotLabel = "Slot 3: Híbrido";
-      restrictionHTML = `<span class="text-[9px] text-purple-400 font-black absolute bottom-2 right-3">EVO / HÉROE / CAMPEÓN / NORMAL</span>`;
-    } else {
-      slotLabel = `Slot ${index + 1}: Convencional`;
-    }
 
     if (slot) {
       const card = appState.collection.find(c => c.id === slot.cardId);
@@ -638,6 +650,16 @@ function renderActiveDeck() {
         </div>
         <button class="text-slate-500 hover:text-red-400 text-xs font-black p-1.5 self-start" onclick="removeCardFromActiveDeck(event, ${index})">✕</button>
       `;
+
+      // Drag and Drop (Source slot setup)
+      slotEl.draggable = true;
+      slotEl.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', String(index));
+        slotEl.classList.add('deck-slot-dragging');
+      });
+      slotEl.addEventListener('dragend', () => {
+        slotEl.classList.remove('deck-slot-dragging');
+      });
     } else {
       slotEl.className = 'p-4 rounded-2xl border-2 border-dashed border-slate-800 bg-slate-950/20 hover:bg-slate-950/50 cursor-pointer flex flex-col items-center justify-center min-h-[64px] transition relative';
       slotEl.innerHTML = `
@@ -652,10 +674,59 @@ function renderActiveDeck() {
       openDeckBuilder(index);
     });
 
+    // Drag and Drop (Target drop setup)
+    slotEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+    slotEl.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      slotEl.classList.add('deck-slot-hover');
+    });
+    slotEl.addEventListener('dragleave', () => {
+      slotEl.classList.remove('deck-slot-hover');
+    });
+    slotEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      slotEl.classList.remove('deck-slot-hover');
+      
+      const fromIndexStr = e.dataTransfer.getData('text/plain');
+      if (fromIndexStr === '') return;
+      const fromIndex = parseInt(fromIndexStr, 10);
+      if (fromIndex === index) return;
+
+      const cardA = appState.activeDeck[fromIndex];
+      const cardB = appState.activeDeck[index];
+
+      if (cardA) {
+        const dbCardA = appState.collection.find(c => c.id === cardA.cardId);
+        if (!isCardEligibleForSlot(dbCardA, index, cardA.isEvolved, cardA.isHero)) {
+          alert(`La carta "${cardA.name}" no es válida para el Slot ${index + 1} debido a las restricciones de tipo.`);
+          return;
+        }
+      }
+      if (cardB) {
+        const dbCardB = appState.collection.find(c => c.id === cardB.cardId);
+        if (!isCardEligibleForSlot(dbCardB, fromIndex, cardB.isEvolved, cardB.isHero)) {
+          alert(`La carta "${cardB.name}" no es válida para el Slot ${fromIndex + 1} debido a las restricciones de tipo.`);
+          return;
+        }
+      }
+
+      appState.activeDeck[fromIndex] = cardB;
+      appState.activeDeck[index] = cardA;
+
+      saveToLocalStorage();
+      renderActiveDeck();
+      if (appState.activeSection === 'decks') {
+        updateRecommendations();
+      }
+    });
+
     container.appendChild(slotEl);
   });
 
   calculateDeckConsolidatedCost();
+  updateFastCycleAndSpells();
 }
 
 window.removeCardFromActiveDeck = function(event, index) {
@@ -1175,6 +1246,333 @@ window.scrollToCardInCollection = function(cardId) {
     }
   }, 100);
 };
+
+// ----------------------------------------------------
+// FUNCIONES AUXILIARES (TEMA, HISTORIAL, DECK CHECKER, COPIAR)
+// ----------------------------------------------------
+
+// 1. Tema de la Aplicación (Liquid Light)
+function setupTheme() {
+  const btn = document.getElementById('btn-theme-toggle');
+  if (!btn) return;
+  
+  const savedTheme = localStorage.getItem('cr_theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    btn.innerText = '☀️';
+  } else {
+    document.body.classList.remove('light-theme');
+    btn.innerText = '🌙';
+  }
+  
+  btn.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-theme');
+    if (isLight) {
+      localStorage.setItem('cr_theme', 'light');
+      btn.innerText = '☀️';
+    } else {
+      localStorage.setItem('cr_theme', 'dark');
+      btn.innerText = '🌙';
+    }
+  });
+}
+
+// 2. Historial de Cuentas Sincronizadas
+let searchHistory = [];
+
+function loadSearchHistory() {
+  const historyRaw = localStorage.getItem('cr_search_history');
+  if (historyRaw) {
+    searchHistory = JSON.parse(historyRaw);
+  }
+  renderHistoryDropdown();
+}
+
+function saveSearchHistory(profile) {
+  searchHistory = searchHistory.filter(p => p.tag !== profile.tag);
+  searchHistory.unshift(profile);
+  if (searchHistory.length > 5) {
+    searchHistory = searchHistory.slice(0, 5);
+  }
+  localStorage.setItem('cr_search_history', JSON.stringify(searchHistory));
+  renderHistoryDropdown();
+}
+
+function renderHistoryDropdown() {
+  const dropdown = document.getElementById('search-history-dropdown');
+  if (!dropdown) return;
+  
+  if (searchHistory.length === 0) {
+    dropdown.innerHTML = '';
+    return;
+  }
+  
+  dropdown.innerHTML = `
+    <div class="px-3.5 py-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-800/60">Búsquedas Recientes</div>
+    <div class="max-h-60 overflow-y-auto">
+      ${searchHistory.map(p => `
+        <div class="history-item flex items-center justify-between px-4 py-2.5 cursor-pointer text-xs md:text-sm" data-tag="${p.tag}">
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-slate-250">${p.name}</span>
+            <span class="text-[10px] text-slate-500 font-mono">${p.tag}</span>
+          </div>
+          <span class="text-slate-500 hover:text-red-400 font-bold p-1 delete-history-item" data-tag="${p.tag}">✕</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Asignar listeners
+  const items = dropdown.querySelectorAll('.history-item');
+  items.forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-history-item')) {
+        e.stopPropagation();
+        const tag = e.target.dataset.tag;
+        searchHistory = searchHistory.filter(p => p.tag !== tag);
+        localStorage.setItem('cr_search_history', JSON.stringify(searchHistory));
+        renderHistoryDropdown();
+        return;
+      }
+      const tag = item.dataset.tag;
+      document.getElementById('player-tag-input').value = tag;
+      dropdown.classList.add('hidden');
+      fetchPlayerData(tag);
+    });
+  });
+}
+
+function setupHistoryDropdownEvents() {
+  const tagInput = document.getElementById('player-tag-input');
+  const dropdown = document.getElementById('search-history-dropdown');
+  
+  if (!tagInput || !dropdown) return;
+  
+  tagInput.addEventListener('focus', () => {
+    if (searchHistory.length > 0) {
+      dropdown.classList.remove('hidden');
+    }
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!tagInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+}
+
+// 3. Copiar Enlace de Mazo
+function copyDeckLink() {
+  const cardIds = appState.activeDeck
+    .filter(slot => slot !== null)
+    .map(slot => slot.cardId);
+
+  if (cardIds.length !== 8) {
+    alert('Para poder copiar el enlace del mazo, este debe tener exactamente 8 cartas completas.');
+    return;
+  }
+
+  const link = `https://link.clashroyale.com/deck/es?deck=${cardIds.join(';')}`;
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('btn-copy-deck-link');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span>✓ Copiado!</span>';
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+    }, 2000);
+  }).catch(err => {
+    console.error('Error al copiar: ', err);
+    alert('No se pudo copiar el enlace automáticamente. Aquí lo tienes: ' + link);
+  });
+}
+
+// 4. Validación de Cartas en los Slots del Editor
+function isCardEligibleForSlot(card, slotIndex, isEvolved, isHero) {
+  if (!card) return false;
+  const isChampion = card.rarity.toLowerCase() === 'champion';
+  
+  if (slotIndex === 0) {
+    if (isHero || isChampion) return false;
+    if (isEvolved && !card.evolutionIconUrl) return false;
+    return true;
+  } else if (slotIndex === 1) {
+    if (isEvolved) return false;
+    if (isHero && !(HERO_CARDS.includes(card.name) || !!card.heroIconUrl)) return false;
+    return true;
+  } else if (slotIndex === 2) {
+    if (isEvolved && !card.evolutionIconUrl) return false;
+    if (isHero && !(HERO_CARDS.includes(card.name) || !!card.heroIconUrl)) return false;
+    return true;
+  } else {
+    if (isEvolved || isHero || isChampion) return false;
+    return true;
+  }
+}
+
+// 5. Configuración de Nivel Objetivo Global
+window.setGlobalTargetLevel = function(newLvl) {
+  appState.collection.forEach(card => {
+    appState.targetLevels[card.id] = newLvl;
+  });
+  saveToLocalStorage();
+  buildCollection();
+  renderCollection();
+  updateGlobalTargetUI();
+  if (appState.activeSection === 'decks') {
+    renderActiveDeck();
+    updateRecommendations();
+  }
+};
+
+function updateGlobalTargetUI() {
+  const count15 = Object.values(appState.targetLevels).filter(v => v === 15).length;
+  const count16 = Object.values(appState.targetLevels).filter(v => v === 16).length;
+  
+  const btn15 = document.getElementById('btn-global-target-15');
+  const btn16 = document.getElementById('btn-global-target-16');
+  
+  if (!btn15 || !btn16) return;
+  
+  btn15.className = `px-2.5 py-0.5 rounded-lg text-xs font-black transition ${count15 >= count16 ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-slate-200'}`;
+  btn16.className = `px-2.5 py-0.5 rounded-lg text-xs font-black transition ${count16 > count15 ? 'bg-pink-600 text-white' : 'text-slate-400 hover:text-slate-200'}`;
+}
+
+// 6. Elixir y Ciclo + Deck Checker
+const LIGHT_SPELLS = ["The Log", "Zap", "Arrows", "Giant Snowball", "Rage", "Tornado", "Earthquake", "Barbarian Barrel", "Delivery"];
+const HEAVY_SPELLS = ["Fireball", "Poison", "Rocket", "Lightning", "Freeze"];
+const AIR_DEFENSE_CARDS = [
+  "Archers", "Spear Goblins", "Minions", "Bats", "Firecracker", "Skeleton Dragons", 
+  "Goblin Gang", "Minion Horde", "Three Musketeers", "Musketeer", "Wizard", 
+  "Ice Wizard", "Electro Wizard", "Magic Archer", "Dart Goblin", "Hunter", 
+  "Executioner", "Witch", "Witch Mother", "Ram Rider", "Electro Dragon", 
+  "Baby Dragon", "Inferno Dragon", "Mega Minion", "Phoenix", "Flying Machine", 
+  "Zappies", "Archer Queen", "Little Prince", "Tesla", "Inferno Tower", "Rascals"
+];
+
+function calculateAverageElixir() {
+  let count = 0;
+  let sum = 0;
+  appState.activeDeck.forEach(slot => {
+    if (!slot) return;
+    const card = appState.collection.find(c => c.id === slot.cardId);
+    if (!card) return;
+    if (card.name === "Mirror") return;
+    sum += card.elixirCost || 0;
+    count++;
+  });
+  return count > 0 ? (sum / count).toFixed(1) : "0.0";
+}
+
+function updateFastCycleAndSpells() {
+  const cards = [];
+  appState.activeDeck.forEach(slot => {
+    if (!slot) return;
+    const card = appState.collection.find(c => c.id === slot.cardId);
+    if (card) {
+      cards.push(card);
+    }
+  });
+
+  const avg = calculateAverageElixir();
+  const avgText = document.getElementById('deck-average-elixir');
+  if (avgText) {
+    avgText.innerText = avg + ' 💧';
+  }
+
+  const cycleCards = cards.filter(c => c.name !== "Mirror");
+  const sortedForCycle = [...cycleCards].sort((a, b) => (a.elixirCost || 0) - (b.elixirCost || 0));
+  const cheapest4 = sortedForCycle.slice(0, 4);
+  const fastCycleSum = cheapest4.reduce((sum, c) => sum + (c.elixirCost || 0), 0);
+
+  const cycleText = document.getElementById('deck-fast-cycle');
+  if (cycleText) {
+    cycleText.innerText = fastCycleSum + ' 💧';
+  }
+
+  const cycleCardsContainer = document.getElementById('deck-fast-cycle-cards');
+  if (cycleCardsContainer) {
+    cycleCardsContainer.innerHTML = '';
+    cheapest4.forEach(card => {
+      const img = document.createElement('img');
+      img.className = 'w-5 h-6 md:w-6 md:h-7 object-contain rounded-md border border-slate-800 bg-slate-950 p-0.5 shadow-sm';
+      img.src = card.iconUrl;
+      img.title = `${card.name} (${card.elixirCost || 0} Elixir)`;
+      img.onerror = () => { img.src = 'https://placehold.co/30x30'; };
+      cycleCardsContainer.appendChild(img);
+    });
+  }
+
+  runDeckChecker(cards);
+}
+
+function runDeckChecker(cards) {
+  const airCards = cards.filter(c => AIR_DEFENSE_CARDS.includes(c.name));
+  const airCount = airCards.length;
+  const airIcon = document.getElementById('checker-air-icon');
+  const airText = document.getElementById('checker-air-text');
+  const airPanel = document.getElementById('checker-air');
+
+  if (airPanel && airIcon && airText) {
+    if (airCount >= 3) {
+      airIcon.innerText = '✅';
+      airText.innerText = `${airCount} antiaéreos`;
+      airPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/10 transition";
+    } else if (airCount === 2) {
+      airIcon.innerText = '✅';
+      airText.innerText = `${airCount} antiaéreos`;
+      airPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-yellow-500/40 bg-yellow-950/10 transition";
+    } else {
+      airIcon.innerText = '⚠️';
+      airText.innerText = `Vulnerable: ${airCount} (mín. 2)`;
+      airPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-red-500/40 bg-red-950/10 transition";
+    }
+  }
+
+  let hasLight = false;
+  let hasHeavy = false;
+  cards.forEach(c => {
+    if (LIGHT_SPELLS.includes(c.name)) hasLight = true;
+    if (HEAVY_SPELLS.includes(c.name)) hasHeavy = true;
+  });
+
+  const spellsIcon = document.getElementById('checker-spells-icon');
+  const spellsText = document.getElementById('checker-spells-text');
+  const spellsPanel = document.getElementById('checker-spells');
+
+  if (spellsPanel && spellsIcon && spellsText) {
+    if (hasLight && hasHeavy) {
+      spellsIcon.innerText = '✅';
+      spellsText.innerText = 'Ligero + pesado';
+      spellsPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/10 transition";
+    } else if (hasLight || hasHeavy) {
+      spellsIcon.innerText = '⚠️';
+      spellsText.innerText = `Falta ${!hasLight ? 'ligero' : 'pesado'}`;
+      spellsPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-yellow-500/40 bg-yellow-950/10 transition";
+    } else {
+      spellsIcon.innerText = '⚠️';
+      spellsText.innerText = 'Sin hechizos';
+      spellsPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-red-500/40 bg-red-950/10 transition";
+    }
+  }
+
+  const winConds = cards.filter(c => WIN_CONDITIONS.includes(c.name));
+  const winCondCount = winConds.length;
+  const wincondIcon = document.getElementById('checker-wincond-icon');
+  const wincondText = document.getElementById('checker-wincond-text');
+  const wincondPanel = document.getElementById('checker-wincond');
+
+  if (wincondPanel && wincondIcon && wincondText) {
+    if (winCondCount >= 1) {
+      wincondIcon.innerText = '✅';
+      wincondText.innerText = `${winCondCount} Win Cond.`;
+      wincondPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/10 transition";
+    } else {
+      wincondIcon.innerText = '⚠️';
+      wincondText.innerText = 'Falta Win Cond.';
+      wincondPanel.className = "flex items-center gap-3 p-2.5 rounded-xl border border-red-500/40 bg-red-950/10 transition";
+    }
+  }
+}
 
 // ----------------------------------------------------
 // ARRANCAR APLICACIÓN
