@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#020617">
+  <meta name="description" content="Tracker de progresión y constructor de mazos de Clash Royale para optimización de mejoras de nivel 15 y 16.">
+  <title>Clash Royale Tracker (Meta 2026)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          screens: {
+            'xs': '375px',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Estilos Personalizados -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body class="min-h-screen text-slate-100 flex justify-center p-3 md:p-6 lg:p-8">
+
+  <!-- Contenedor Principal Adaptable (iOS Liquid Glass Viewport) -->
+  <main id="app-viewport" class="w-full max-w-4xl flex flex-col gap-5 pb-24">
+    
+    <!-- HEADER -->
+    <header class="flex items-center justify-between py-3 border-b border-slate-800 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-600 to-amber-400 flex items-center justify-center font-bold text-slate-950 text-xl shadow-lg select-none">🏆</div>
+        <div>
+          <h1 class="clash-title text-lg md:text-2xl font-black bg-gradient-to-r from-amber-400 to-pink-500 bg-clip-text text-transparent">Clash Royale Tracker</h1>
+          <p class="text-[10px] md:text-xs text-slate-500 uppercase tracking-widest font-bold">Planificación de Progresión Competitiva 2026</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="text-xs bg-slate-900 border border-slate-800 px-3 py-1 rounded-full text-slate-400 font-bold select-none shadow-inner">Fase Alpha</span>
+      </div>
+    </header>
+
+    <!-- NAVEGACIÓN PRINCIPAL DE SECCIONES (iOS Segmented Control) -->
+    <nav class="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner select-none flex-shrink-0">
+      <button 
+        id="nav-btn-collection" 
+        class="flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition text-center bg-pink-600 text-white shadow-md"
+      >
+        🎴 Colección de Cartas
+      </button>
+      <button 
+        id="nav-btn-decks" 
+        class="flex-1 py-2.5 text-xs md:text-sm font-black rounded-xl transition text-center text-slate-400 hover:text-slate-200"
+      >
+        ⚔️ Mazos y Progreso
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN A: COLECCIÓN (VISIBLE POR DEFECTO) -->
+    <!-- ========================================== -->
+    <div id="view-collection" class="flex flex-col gap-5 w-full">
+      
+      <!-- Panel de Sincronización (Solo en Colección) -->
+      <section class="glass-panel p-5 rounded-2xl flex flex-col gap-3.5 shadow-xl">
+        <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <span>🔗</span> Sincronizar Cuenta de Clash Royale
+        </h3>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <input 
+            type="text" 
+            id="player-tag-input" 
+            placeholder="#TAGJUGADOR" 
+            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm md:text-base text-slate-200 placeholder-slate-600 focus:outline-none focus:border-pink-500 transition font-mono uppercase shadow-inner"
+          >
+          <button 
+            id="btn-sync-player" 
+            class="btn-primary px-6 py-2.5 rounded-xl text-sm md:text-base font-bold text-white flex items-center justify-center gap-2 shadow-lg"
+          >
+            <span>Sincronizar</span>
+            <svg id="sync-spinner" class="animate-spin h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div id="player-profile-panel" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between shadow-inner">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h4 id="player-name" class="font-extrabold text-base text-slate-100 truncate">Nombre Jugador</h4>
+              <span id="player-tag-display" class="text-xs text-slate-500 font-mono">#TAG</span>
+            </div>
+            <p id="player-arena" class="text-xs text-slate-400 mt-1">Arena</p>
+          </div>
+          <div class="text-right flex-shrink-0 bg-slate-900/90 border border-slate-800 p-2 rounded-lg">
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Trofeos</p>
+            <p id="player-trophies" class="text-base font-black text-amber-400">0</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel de la Colección Grid -->
+      <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <span>🎴</span> Tu Inventario y Progresión
+            </h3>
+          </div>
+          
+          <div class="flex flex-col md:flex-row gap-3">
+            <input 
+              type="text" 
+              id="card-search-input" 
+              placeholder="Buscar carta..." 
+              class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs md:text-sm text-slate-200 focus:outline-none focus:border-pink-500 transition shadow-inner"
+            >
+            <div class="flex gap-2">
+              <!-- Ordenador en la Colección -->
+              <select id="collection-sort-by" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs md:text-sm text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+                <option value="name-asc">🔠 Nombre: A-Z</option>
+                <option value="name-desc">🔠 Nombre: Z-A</option>
+                <option value="level-desc">📈 Nivel: Mayor a Menor</option>
+                <option value="level-asc">📉 Nivel: Menor a Mayor</option>
+                <option value="rarity-desc">💎 Rareza: Mayor a Menor</option>
+                <option value="rarity-asc">💎 Rareza: Menor a Mayor</option>
+                <option value="elixir-desc">⚡ Elixir: Mayor a Menor</option>
+                <option value="elixir-asc">⚡ Elixir: Menor a Mayor</option>
+              </select>
+              <label class="flex items-center gap-2 cursor-pointer bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-xs md:text-sm select-none shadow-inner">
+                <input type="checkbox" id="filter-evo-toggle" class="accent-pink-600">
+                <span class="text-pink-500 font-bold text-[10px] md:text-xs">EVO</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 overflow-x-auto pb-1.5 select-none scrollbar-thin">
+            <button class="filter-chip active text-xs px-3.5 py-1.5 rounded-full" data-rarity="all">Todos</button>
+            <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="common" style="--rarity-color: var(--rarity-common)">Común</button>
+            <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="rare" style="--rarity-color: var(--rarity-rare)">Especial</button>
+            <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="epic" style="--rarity-color: var(--rarity-epic)">Épica</button>
+            <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="legendary" style="--rarity-color: var(--rarity-legendary)">Legendaria</button>
+            <button class="filter-chip text-xs px-3.5 py-1.5 rounded-full" data-rarity="champion" style="--rarity-color: var(--rarity-champion)">Campeón</button>
+          </div>
+        </div>
+
+        <!-- Cuadrícula Infinita de Cartas (Quitado max-height y overflow para scroll nativo de página) -->
+        <div id="collection-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <!-- Generado por JS -->
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECCIÓN B: MAZOS (OCULTO POR DEFECTO) -->
+    <!-- ========================================== -->
+    <div id="view-decks" class="hidden flex-col gap-5 w-full">
+      
+      <!-- Recomendaciones Inteligentes -->
+      <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
+        <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <span>⭐</span> Prioridad de Mejoras Sugerida
+        </h3>
+        <div id="recommendations-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Generado por JS -->
+        </div>
+      </section>
+
+      <!-- Constructor de Mazos -->
+      <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+            <span>⚔️</span> Editor de Mazo Activo
+          </h3>
+          <button 
+            id="btn-export-deck" 
+            class="text-xs text-slate-400 hover:text-pink-500 border border-slate-800 bg-slate-950 px-3.5 py-1 rounded-xl font-bold transition flex items-center gap-1.5 shadow"
+          >
+            <span>📤 Exportar</span>
+          </button>
+        </div>
+
+        <div id="deck-slots-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- Generado por JS -->
+        </div>
+
+        <!-- Costes del Mazo -->
+        <div class="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3.5 shadow-inner">
+          <div class="flex items-center justify-between">
+            <span class="text-xs md:text-sm text-slate-400 font-semibold">Oro Total Agrupado:</span>
+            <span id="deck-total-gold" class="text-sm md:text-base font-extrabold text-amber-400">0 🪙</span>
+          </div>
+          <div class="space-y-2">
+            <span class="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-wider">Desglose por rareza faltante:</span>
+            <div id="deck-breakdown-container" class="grid grid-cols-3 gap-2.5 text-xs">
+              <!-- Generado por JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input 
+            type="text" 
+            id="deck-name-input" 
+            placeholder="Nombre del mazo (ej: Log Bait 2026)" 
+            class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs md:text-sm text-slate-200 focus:outline-none focus:border-pink-500 transition shadow-inner"
+          >
+          <button 
+            id="btn-save-deck" 
+            class="px-5 py-2 bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs md:text-sm font-bold rounded-xl text-slate-300 transition shadow"
+          >
+            Guardar en Favoritos
+          </button>
+        </div>
+      </section>
+
+      <!-- Biblioteca de Mazos Guardados -->
+      <section class="glass-panel p-5 rounded-3xl flex flex-col gap-4 shadow-xl">
+        <h3 class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <span>📁</span> Tus Mazos Favoritos Guardados
+        </h3>
+        <div id="saved-decks-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Generado por JS -->
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- OVERLAY BOTTOM SHEET -->
+  <div id="bottom-sheet-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-md z-40 hidden"></div>
+
+  <!-- BOTTOM SHEET (VENTANA INFERIOR DESLIZABLE) -->
+  <div 
+    id="deck-builder-bottom-sheet" 
+    class="bottom-sheet fixed bottom-0 left-0 right-0 max-h-[80vh] rounded-t-[32px] p-5 flex flex-col gap-4 z-50 closed select-none max-w-xl mx-auto"
+  >
+    <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-shrink-0">
+      <h3 id="bottom-sheet-title" class="text-xs md:text-sm font-bold uppercase tracking-wider text-slate-300">Seleccionar Carta</h3>
+      <button id="close-bottom-sheet" class="text-slate-400 hover:text-slate-100 text-base font-bold p-1">✕</button>
+    </div>
+
+    <!-- Pestañas Filtros de Slot (Evolución, Héroe, Campeón, Normal) -->
+    <div id="bottom-sheet-tabs-container" class="flex gap-2 overflow-x-auto pb-1 flex-shrink-0">
+      <!-- Generado dinámicamente -->
+    </div>
+
+    <!-- Búsqueda y Ordenamiento en el Bottom Sheet (Nuevo Filtro Interno para Mazos) -->
+    <div class="flex flex-col sm:flex-row gap-2 flex-shrink-0">
+      <input 
+        type="text" 
+        id="bottom-sheet-search" 
+        placeholder="Buscar carta en este slot..." 
+        class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-500 transition shadow-inner font-semibold"
+      >
+      <select id="bottom-sheet-sort-by" class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-350 focus:outline-none focus:border-pink-500 font-bold shadow-inner">
+        <option value="name-asc">🔠 Nombre: A-Z</option>
+        <option value="name-desc">🔠 Nombre: Z-A</option>
+        <option value="level-desc">📈 Nivel: Mayor a Menor</option>
+        <option value="level-asc">📉 Nivel: Menor a Mayor</option>
+        <option value="rarity-desc">💎 Rareza: Mayor a Menor</option>
+        <option value="rarity-asc">💎 Rareza: Menor a Mayor</option>
+        <option value="elixir-desc">⚡ Elixir: Mayor a Menor</option>
+        <option value="elixir-asc">⚡ Elixir: Menor a Mayor</option>
+      </select>
+    </div>
+
+    <!-- Selección de Cartas -->
+    <div id="bottom-sheet-cards-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2 overflow-y-auto max-h-[45vh] pr-1 pb-4">
+      <!-- Generado por JS -->
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="cards_db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
