@@ -613,6 +613,24 @@ function renderActiveDeck() {
   const container = document.getElementById('deck-slots-container');
   container.innerHTML = '';
 
+  appState.activeDeck.forEach((slot, index) => {
+    const slotEl = document.createElement('div');
+    let slotLabel = `Slot ${index + 1}`;
+    let restrictionHTML = '';
+
+    if (index === 0) {
+      slotLabel = "Slot 1: Evolución / Normal";
+      restrictionHTML = `<span class="text-[9px] text-pink-400 font-black absolute bottom-2 right-3">EVO / NORMAL</span>`;
+    } else if (index === 1) {
+      slotLabel = "Slot 2: Héroe / Campeón / Normal";
+      restrictionHTML = `<span class="text-[9px] text-amber-400 font-black absolute bottom-2 right-3">HÉROE / CAMPEÓN / NORMAL</span>`;
+    } else if (index === 2) {
+      slotLabel = "Slot 3: Híbrido";
+      restrictionHTML = `<span class="text-[9px] text-purple-400 font-black absolute bottom-2 right-3">EVO / HÉROE / CAMPEÓN / NORMAL</span>`;
+    } else {
+      slotLabel = `Slot ${index + 1}: Convencional`;
+    }
+
     if (slot) {
       const card = appState.collection.find(c => c.id === slot.cardId);
       const isEvo = slot.isEvolved;
