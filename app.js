@@ -25,18 +25,20 @@ const CR_COSTS = {
 const WIN_CONDITIONS = [
   "Hog Rider", "Giant", "Balloon", "Goblin Barrel", "Golem", "Sparky", "X-Bow", 
   "Royal Giant", "Graveyard", "Miner", "Electro Giant", "Ram Rider", "Goblin Giant", 
-  "Battle Ram", "Wall Breakers", "Lava Hound", "Three Musketeers", "Royal Hogs", "Elixir Golem"
+  "Battle Ram", "Wall Breakers", "Lava Hound", "Three Musketeers", "Royal Hogs", "Elixir Golem",
+  "Rune Giant", "Boss Bandit", "Spirit Empress", "Berserker", "Suspicious Bush", "Goblin Machine", "Goblin Demolisher", "Ronin"
 ];
 
 const KEY_SPELLS = [
   "Fireball", "Rocket", "Lightning", "Poison", "The Log", "Tornado", "Zap", 
-  "Arrows", "Giant Snowball", "Rage", "Freeze", "Earthquake"
+  "Arrows", "Giant Snowball", "Rage", "Freeze", "Earthquake", "Void", "Goblin Curse"
 ];
 
 // Cartas que disponen de versión Héroe en Clash Royale (independiente de la rareza Campeón)
 const HERO_CARDS = [
   "Musketeer", "Bowler", "Knight", "Mini P.E.K.K.A", "Giant", "Ice Golem", 
-  "Balloon", "Barbarian Barrel", "Goblins", "Mega Minion", "Wizard", "Magic Archer", "Dark Prince"
+  "Balloon", "Barbarian Barrel", "Goblins", "Mega Minion", "Wizard", "Magic Archer", "Dark Prince",
+  "Valkyrie", "Berserker", "Tombstone"
 ];
 
 // Cartas que son Edificios
@@ -49,8 +51,9 @@ const BUILDINGS = [
 const ALL_SPELLS = [
   "Arrows", "Barbarian Barrel", "Giant Snowball", "Zap", "Earthquake", "Fireball", 
   "Rocket", "Clone", "Freeze", "Goblin Barrel", "Goblin Curse", "Lightning", "Mirror", 
-  "Poison", "Rage", "Tornado", "Void", "The Log", "Graveyard", "Royal Delivery"
+  "Poison", "Rage", "Tornado", "Void", "The Log", "Graveyard", "Royal Delivery", "Vines"
 ];
+
 
 // ----------------------------------------------------
 // ESTADO GLOBAL DE LA APLICACIÓN
@@ -226,6 +229,16 @@ function initApp() {
   renderSavedDecks();
   updateRecommendations();
   switchSection(appState.activeSection);
+
+  // Auto-sincronizar tag si no hay datos almacenados o en desarrollo local
+  const tagInput = document.getElementById('player-tag-input');
+  if (tagInput && !tagInput.value) {
+    tagInput.value = '#G2LPQ0YV';
+  }
+  const defaultTag = tagInput ? tagInput.value : '#G2LPQ0YV';
+  if (!appState.playerData || !appState.playerData.cards || appState.playerData.tag === '#G2LPQ0YV') {
+    fetchPlayerData(defaultTag);
+  }
 }
 
 function buildCollection() {
@@ -248,15 +261,106 @@ function buildCollection() {
       appState.targetLevels[staticCard.id] = 15;
     }
 
+    const evoIcon = staticCard.evolutionIconUrl || playerCard?.iconUrls?.evolutionMedium || null;
+    const heroIcon = staticCard.heroIconUrl || playerCard?.iconUrls?.heroMedium || null;
+
+    const hasEvoUnlocked = !!playerCard && (!!evoIcon && !HERO_CARDS.includes(staticCard.name));
+    const hasHeroUnlocked = !!playerCard && (HERO_CARDS.includes(staticCard.name) || !!heroIcon);
+
     return {
       ...staticCard,
+      evolutionIconUrl: evoIcon,
+      heroIconUrl: heroIcon,
       currentLevel: currentLevel,
       count: count,
       isPlayerOwned: !!playerCard,
-      evolutionLevel: playerCard ? (playerCard.evolutionLevel || 0) : 0,
+      evolutionLevel: (hasEvoUnlocked || hasHeroUnlocked || (playerCard?.evolutionLevel || 0) > 0) ? 1 : 0,
+      hasEvoUnlocked: hasEvoUnlocked,
+      hasHeroUnlocked: hasHeroUnlocked,
       starLevel: playerCard ? (playerCard.starLevel || 0) : 0
     };
   });
+}
+
+// ----------------------------------------------------
+// RENDERS Y UI DEL PERFIL
+// ----------------------------------------------------
+function updatePlayerProfileUI() {
+  if (!appState.playerData) return;
+
+  const panel = document.getElementById('player-profile-panel');
+  if (panel) panel.classList.remove('hidden');
+
+  const nameEl = document.getElementById('player-name');
+  if (nameEl) nameEl.innerText = appState.playerData.name || 'Jugador';
+
+  const tagEl = document.getElementById('player-tag-display');
+  if (tagEl) tagEl.innerText = appState.playerData.tag || '';
+
+  const trophiesEl = document.getElementById('player-trophies');
+  if (trophiesEl) trophiesEl.innerText = (appState.playerData.trophies || 0).toLocaleString();
+
+  const arenaEl = document.getElementById('player-arena');
+  if (arenaEl) arenaEl.innerText = appState.playerData.arena ? appState.playerData.arena.name : '';
+
+  const clanEl = document.getElementById('player-clan');
+  if (clanEl) clanEl.innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
+
+  const crownEl = document.getElementById('player-crown-level');
+  if (crownEl) crownEl.innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
+
+  const challengeEl = document.getElementById('player-challenge-wins');
+  if (challengeEl) challengeEl.innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
+
+  const lastSyncEl = document.getElementById('player-last-sync');
+  if (lastSyncEl && appState.playerData.lastSync) {
+    const syncDate = new Date(appState.playerData.lastSync);
+    lastSyncEl.innerText = '⏳ ' + syncDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ----------------------------------------------------
+  // CÁLCULO Y RENDER DEL NIVEL DE COLECCIÓN Y HITO
+  // ----------------------------------------------------
+  let collectionLevel = 0;
+  if (appState.playerData.badges) {
+    const colBadge = appState.playerData.badges.find(b => b.name === 'CollectionLevel');
+    if (colBadge && colBadge.progress) {
+      collectionLevel = colBadge.progress;
+    }
+  }
+
+  // Fallback si no está la badge en la respuesta
+  if (!collectionLevel && appState.collection && appState.collection.length) {
+    let cardUpgrades = 0;
+    let evos = 0;
+    let heroes = 0;
+    appState.collection.forEach(c => {
+      if (c.isPlayerOwned) {
+        let baseLvl = getBaseLevel(c.rarity);
+        cardUpgrades += Math.max(0, c.currentLevel - baseLvl);
+        if (c.hasEvoUnlocked) evos++;
+        if (c.hasHeroUnlocked) heroes++;
+      }
+    });
+    collectionLevel = cardUpgrades + (5 * evos) + (5 * heroes) + 309;
+  }
+
+  const stepSize = collectionLevel >= 1500 ? 5 : 10;
+  const nextMilestone = Math.ceil((collectionLevel + 1) / stepSize) * stepSize;
+  const pointsNeeded = nextMilestone - collectionLevel;
+  
+  const currentStepProgress = stepSize - pointsNeeded;
+  const milestoneProgressPct = Math.min(100, Math.max(0, Math.round((currentStepProgress / stepSize) * 100)));
+
+  const colLvlElem = document.getElementById('player-collection-level');
+  const nextMilestoneElem = document.getElementById('player-next-milestone');
+  const pointsNeededElem = document.getElementById('player-milestone-points-needed');
+  const progressBarElem = document.getElementById('player-milestone-progress-bar');
+
+  if (colLvlElem) colLvlElem.innerText = collectionLevel.toLocaleString();
+  if (nextMilestoneElem) nextMilestoneElem.innerText = 'Hito ' + nextMilestone.toLocaleString();
+  if (pointsNeededElem) pointsNeededElem.innerText = `Faltan ${pointsNeeded} punto${pointsNeeded === 1 ? '' : 's'}`;
+  if (progressBarElem) progressBarElem.style.width = `${milestoneProgressPct}%`;
 }
 
 // ----------------------------------------------------
@@ -280,19 +384,7 @@ function loadFromLocalStorage() {
   const playerDataRaw = localStorage.getItem('cr_player_data');
   if (playerDataRaw) {
     appState.playerData = JSON.parse(playerDataRaw);
-    document.getElementById('player-profile-panel').classList.remove('hidden');
-    document.getElementById('player-name').innerText = appState.playerData.name;
-    document.getElementById('player-tag-display').innerText = appState.playerData.tag;
-    document.getElementById('player-trophies').innerText = appState.playerData.trophies;
-    document.getElementById('player-arena').innerText = appState.playerData.arena ? appState.playerData.arena.name : '';
-    document.getElementById('player-clan').innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
-    document.getElementById('player-crown-level').innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
-    document.getElementById('player-challenge-wins').innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
-    
-    if (appState.playerData.lastSync) {
-      const syncDate = new Date(appState.playerData.lastSync);
-      document.getElementById('player-last-sync').innerText = '⏳ ' + syncDate.toLocaleString();
-    }
+    updatePlayerProfileUI();
   }
 }
 
@@ -483,22 +575,8 @@ async function fetchPlayerData(tag) {
 
     appState.playerData = data;
     saveToLocalStorage();
-    
-    // Update profile UI specifically
-    document.getElementById('player-profile-panel').classList.remove('hidden');
-    document.getElementById('player-name').innerText = appState.playerData.name;
-    document.getElementById('player-tag-display').innerText = appState.playerData.tag;
-    document.getElementById('player-trophies').innerText = appState.playerData.trophies;
-    document.getElementById('player-arena').innerText = appState.playerData.arena ? appState.playerData.arena.name : '';
-    document.getElementById('player-clan').innerText = appState.playerData.clan ? appState.playerData.clan.name : 'Sin Clan';
-    document.getElementById('player-crown-level').innerText = 'Nivel ' + (appState.playerData.expLevel || '-');
-    document.getElementById('player-challenge-wins').innerText = (appState.playerData.challengeMaxWins || '0') + ' 🏆';
-    if (appState.playerData.lastSync) {
-      const syncDate = new Date(appState.playerData.lastSync);
-      document.getElementById('player-last-sync').innerText = '⏳ ' + syncDate.toLocaleString();
-    }
-
     buildCollection();
+    updatePlayerProfileUI();
     // Fin del update de UI
 
     saveSearchHistory({ tag: data.tag, name: data.name });
@@ -618,15 +696,11 @@ function renderCollection() {
         </div>`;
     } else {
       let innerBadges = '';
-      // Mostrar indicador de evolución sólo si la carta está realmente evolucionada por el jugador
-      const hasEvoUnlocked = card.evolutionIconUrl && card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name);
-      if (hasEvoUnlocked) {
+      if (card.hasEvoUnlocked || (card.evolutionIconUrl && !HERO_CARDS.includes(card.name) && card.isPlayerOwned)) {
         innerBadges += `<span class="evo-badge text-[8px] px-1.5 py-0.5 rounded-md text-white font-extrabold shadow-md">🌸 EVO</span>`;
       }
       
-      // Mostrar indicador de Héroe sólo si el jugador posee desbloqueada la versión Héroe
-      const hasHeroUnlocked = (HERO_CARDS.includes(card.name) || card.heroIconUrl) && card.evolutionLevel > 0;
-      if (hasHeroUnlocked) {
+      if (card.hasHeroUnlocked || ((HERO_CARDS.includes(card.name) || card.heroIconUrl) && card.isPlayerOwned)) {
         innerBadges += `<span class="bg-emerald-600 text-[8px] px-1.5 py-0.5 rounded-md text-white font-extrabold shadow-md border border-emerald-500">⚡ HÉROE</span>`;
       }
       
@@ -636,11 +710,9 @@ function renderCollection() {
     }
 
     let cardIconUrl = card.iconUrl;
-    // Si tiene la evolución desbloqueada, mostrar imagen evolucionada en la colección
-    if (card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name) && card.evolutionIconUrl) {
+    if (card.isPlayerOwned && !HERO_CARDS.includes(card.name) && card.evolutionIconUrl) {
       cardIconUrl = card.evolutionIconUrl;
-    } else if (card.evolutionLevel > 0 && HERO_CARDS.includes(card.name) && card.heroIconUrl) {
-      // Si tiene héroe desbloqueado, mostrar imagen de héroe en la colección
+    } else if (card.isPlayerOwned && (HERO_CARDS.includes(card.name) || card.heroIconUrl) && card.heroIconUrl) {
       cardIconUrl = card.heroIconUrl;
     }
 
@@ -720,40 +792,7 @@ function renderCollection() {
     grid.appendChild(cardEl);
   });
 
-  calculateCollectionLevel();
   calculateGlobalStats();
-}
-
-function calculateCollectionLevel() {
-  let totalXP = 0;
-  let evosCount = 0;
-  let heroesCount = 0;
-
-  appState.collection.forEach(card => {
-    if (!card.isPlayerOwned) return;
-    totalXP += card.currentLevel;
-    
-    // Check evos
-    if (card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name)) {
-      evosCount++;
-    }
-    // Check heroes
-    if (card.evolutionLevel > 0 && HERO_CARDS.includes(card.name)) {
-      heroesCount++;
-    }
-  });
-
-  const rawPoints = totalXP + (evosCount * 5) + (heroesCount * 5);
-  const maxXP = 2265;
-  const progressPercent = Math.min(100, (rawPoints / maxXP) * 100).toFixed(1);
-
-  const lvlDisplay = document.getElementById('collection-level-display');
-  const nextMilestone = document.getElementById('collection-next-milestone');
-  const progressBar = document.getElementById('collection-level-progress');
-
-  if (lvlDisplay) lvlDisplay.innerText = rawPoints;
-  if (nextMilestone) nextMilestone.innerText = `${progressPercent}%`;
-  if (progressBar) progressBar.style.width = `${progressPercent}%`;
 }
 
 function calculateGlobalStats() {
@@ -780,8 +819,8 @@ function calculateGlobalStats() {
     totalGoldNeeded += costs.goldNeeded;
     totalCardsNeeded += costs.cardsNeeded;
 
-    if (card.evolutionLevel > 0 && !HERO_CARDS.includes(card.name)) totalEvos++;
-    if (card.evolutionLevel > 0 && HERO_CARDS.includes(card.name)) totalHeroes++;
+    if (card.hasEvoUnlocked || (card.evolutionIconUrl && !HERO_CARDS.includes(card.name))) totalEvos++;
+    if (card.hasHeroUnlocked || HERO_CARDS.includes(card.name) || card.heroIconUrl) totalHeroes++;
   });
 
   statsGrid.innerHTML = `

@@ -1209,5 +1209,15 @@ const CARDS_DB = [
     "iconUrl": "https://api-assets.clashroyale.com/cards/300/i0RoY1fs6ay7VAxyFEfZGIPnD002nAKcne9FtJsWBHM.png",
     "evolutionIconUrl": null,
     "heroIconUrl": null
+  },
+  {
+    "name": "Ronin",
+    "id": 26000106,
+    "rarity": "legendary",
+    "elixirCost": 5,
+    "maxEvolutionLevel": 0,
+    "iconUrl": "https://api-assets.clashroyale.com/cards/300/X0dTFs7OGUavreDEzOtYd_YNZ8Zly6qgAE-dd-bNfWU.png",
+    "evolutionIconUrl": null,
+    "heroIconUrl": null
   }
 ];

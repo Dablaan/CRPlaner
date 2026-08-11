@@ -101,7 +101,7 @@
           <div id="search-history-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-30 overflow-hidden font-sans"></div>
         </div>
 
-        <div id="player-profile-panel" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col gap-3 shadow-inner">
+        <div id="player-profile-panel" class="hidden p-4 bg-slate-950/60 border border-slate-800 rounded-2xl flex flex-col gap-3.5 shadow-inner">
           <div class="flex items-center justify-between">
             <div class="min-w-0">
               <div class="flex items-center gap-2">
@@ -116,19 +116,32 @@
               <p id="player-trophies" class="text-sm md:text-base font-black text-amber-400">0</p>
             </div>
           </div>
-          <!-- Estadísticas de Perfil Ampliadas -->
-          <div class="grid grid-cols-3 gap-2 border-t border-slate-800/80 pt-2.5 text-xs">
-            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
-              <span class="text-[9px] text-slate-500 font-bold uppercase">Clan</span>
-              <span id="player-clan" class="font-bold text-slate-200 truncate mt-0.5">-</span>
+
+          <!-- Widget de Nivel de Colección y Próximo Hito -->
+          <div class="p-3.5 bg-gradient-to-r from-purple-950/80 via-slate-900/90 to-indigo-950/80 border border-purple-800/40 rounded-xl flex flex-col gap-2 shadow-md">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-purple-600/30 border border-purple-500/50 flex items-center justify-center text-xl shadow-sm">
+                  🎴
+                </div>
+                <div>
+                  <span class="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider block">Nivel de Colección</span>
+                  <span id="player-collection-level" class="text-xl font-black text-white leading-tight">0</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-bold text-slate-400 block uppercase">Próximo Hito</span>
+                <span id="player-next-milestone" class="text-sm font-black text-purple-300">0</span>
+              </div>
             </div>
-            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
-              <span class="text-[9px] text-slate-500 font-bold uppercase">Nivel de Torre</span>
-              <span id="player-crown-level" class="font-bold text-slate-200 mt-0.5">-</span>
+
+            <!-- Barra de Progreso al Próximo Hito -->
+            <div class="w-full bg-slate-950/90 rounded-full h-2.5 overflow-hidden border border-purple-900/50 relative mt-1">
+              <div id="player-milestone-progress-bar" class="bg-gradient-to-r from-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
             </div>
-            <div class="flex flex-col bg-slate-900/50 p-2 rounded-xl border border-slate-800/60">
-              <span class="text-[9px] text-slate-500 font-bold uppercase">Victorias Desafío</span>
-              <span id="player-challenge-wins" class="font-bold text-slate-200 mt-0.5">-</span>
+            <div class="flex justify-between items-center text-[10px] text-slate-400 font-semibold px-0.5 mt-0.5">
+              <span id="player-milestone-points-needed">Faltan 0 puntos</span>
+              <span class="text-purple-400 font-bold">+1 pt por mejora · +5 pts por Evo/Héroe</span>
             </div>
           </div>
         </div>
@@ -212,25 +225,6 @@
           </div>
         </div>
 
-        <!-- PANEL DE NIVEL DE COLECCIÓN -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 mb-4 flex items-center justify-between shadow-inner">
-          <div class="flex items-center gap-4">
-            <div class="relative w-12 h-12 flex items-center justify-center bg-slate-950 rounded-full border-2 border-pink-600 shadow-lg">
-              <span id="collection-level-display" class="font-black text-sm md:text-base text-white">0</span>
-            </div>
-            <div>
-              <h4 class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider">Nivel de Colección (XP)</h4>
-              <p class="text-[9px] md:text-[10px] text-slate-500 mt-0.5">
-                Progreso hasta 2265 XP: <span id="collection-next-milestone" class="text-slate-300 font-bold">0%</span>
-              </p>
-            </div>
-          </div>
-          <div class="w-1/3 max-w-xs">
-            <div class="card-progress-container !mt-0 h-2 md:h-3 bg-slate-950 border border-slate-800">
-              <div id="collection-level-progress" class="card-progress-bar bg-gradient-to-r from-pink-600 to-purple-600" style="width: 0%;"></div>
-            </div>
-          </div>
-        </div>
 
         <!-- PANEL DE ESTADÍSTICAS GLOBALES -->
         <details class="bg-slate-900 border border-slate-800 rounded-2xl mb-4 shadow-inner group">
